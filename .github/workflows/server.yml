@@ -34,8 +34,42 @@ jobs:
           max-players=10
           EOF
 
-      - name: Start Server
+      - name: Install playit
         run: |
-          java -Xmx14G -Xms4G \
+          curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
+          echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
+          sudo apt update -qq
+          sudo apt install -y playit
+
+      - name: Configure playit
+        env:
+          PLAYIT_SECRET: ${{ secrets.PLAYIT_SECRET }}
+        run: |
+          mkdir -p ~/.config/playit
+          echo "$PLAYIT_SECRET" > ~/.config/playit/playit.toml
+
+      - name: Start playit tunnel
+        run: |
+          playit &
+          sleep 15
+
+      - name: Start Minecraft Server
+        run: |
+          java -Xmx15G -Xms8G \
+          -XX:+UseG1GC \
+          -XX:+ParallelRefProcEnabled \
+          -XX:MaxGCPauseMillis=200 \
           @libraries/net/minecraftforge/forge/1.19.2-43.3.0/unix_args.txt \
           nogui
+
+      - name: Save world
+        if: always()
+        env:
+          FINE_GRAINED_PAT: ${{ secrets.FINE_GRAINED_PAT }}
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git remote set-url origin https://x-access-token:${FINE_GRAINED_PAT}@github.com/${{ github.repository }}
+          git add -A
+          git commit -m "Auto-save world" || echo "Nothing to save"
+          git push || echo "Push failed"
