@@ -27,11 +27,17 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Install Forge 1.19.2
+      - name: Install Forge 1.19.2-43.3.14
         run: |
-          wget -q https://maven.minecraftforge.net/net/minecraftforge/forge/1.19.2-43.3.0/forge-1.19.2-43.3.0-installer.jar
-          java -jar forge-1.19.2-43.3.0-installer.jar --installServer
+          wget -q https://maven.minecraftforge.net/net/minecraftforge/forge/1.19.2-43.3.14/forge-1.19.2-43.3.14-installer.jar
+          java -jar forge-1.19.2-43.3.14-installer.jar --installServer
           echo "eula=true" > eula.txt
+
+      - name: Copy modpack files
+        run: |
+          cp -r mods/ . 2>/dev/null || true
+          cp -r config/ . 2>/dev/null || true
+          cp -r kubejs/ . 2>/dev/null || true
 
       - name: Setup server.properties
         run: |
@@ -41,12 +47,9 @@ jobs:
           difficulty=normal
           gamemode=survival
           max-players=10
+          view-distance=8
+          simulation-distance=6
           EOF
-
-      - name: Copy mods and config
-        run: |
-          cp -r mods/ mods/ 2>/dev/null || true
-          cp -r config/ config/ 2>/dev/null || true
 
       - name: Install playit
         run: |
@@ -65,7 +68,7 @@ jobs:
       - name: Start playit tunnel
         run: |
           playit &
-          sleep 15
+          sleep 20
 
       - name: Start Minecraft Server
         run: |
@@ -79,7 +82,7 @@ jobs:
           -XX:G1HeapRegionSize=32M \
           -XX:G1MixedGCCountTarget=4 \
           -XX:InitiatingHeapOccupancyPercent=15 \
-          @libraries/net/minecraftforge/forge/1.19.2-43.3.0/unix_args.txt \
+          @libraries/net/minecraftforge/forge/1.19.2-43.3.14/unix_args.txt \
           nogui
 
       - name: Save world
