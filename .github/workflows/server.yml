@@ -12,6 +12,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
+      - name: Check Specs
+        run: |
+          echo "=== RAM ==="
+          free -h
+          echo "=== CPU Cores ==="
+          nproc
+          echo "=== Storage ==="
+          df -h
+
       - name: Install Java 17
         uses: actions/setup-java@v3
         with:
@@ -34,6 +43,11 @@ jobs:
           max-players=10
           EOF
 
+      - name: Copy mods and config
+        run: |
+          cp -r mods/ mods/ 2>/dev/null || true
+          cp -r config/ config/ 2>/dev/null || true
+
       - name: Install playit
         run: |
           curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
@@ -55,10 +69,16 @@ jobs:
 
       - name: Start Minecraft Server
         run: |
-          java -Xmx15G -Xms8G \
+          java -Xmx14G -Xms6G \
           -XX:+UseG1GC \
           -XX:+ParallelRefProcEnabled \
           -XX:MaxGCPauseMillis=200 \
+          -XX:+UnlockExperimentalVMOptions \
+          -XX:G1NewSizePercent=20 \
+          -XX:G1ReservePercent=20 \
+          -XX:G1HeapRegionSize=32M \
+          -XX:G1MixedGCCountTarget=4 \
+          -XX:InitiatingHeapOccupancyPercent=15 \
           @libraries/net/minecraftforge/forge/1.19.2-43.3.0/unix_args.txt \
           nogui
 
