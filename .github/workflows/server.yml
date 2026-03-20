@@ -1,25 +1,19 @@
 name: Cisco RPG Server
-
 on:
   workflow_dispatch:
-
 jobs:
   server:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 360
     steps:
-
       - name: Checkout
         uses: actions/checkout@v3
 
       - name: Check Specs
         run: |
-          echo "=== RAM ==="
-          free -h
-          echo "=== CPU Cores ==="
-          nproc
-          echo "=== Storage ==="
-          df -h
+          echo "=== RAM ===" && free -h
+          echo "=== CPU Cores ===" && nproc
+          echo "=== Storage ===" && df -h
 
       - name: Install Java 17
         uses: actions/setup-java@v3
@@ -47,16 +41,15 @@ jobs:
           difficulty=normal
           gamemode=survival
           max-players=10
-          view-distance=8
-          simulation-distance=6
+          view-distance=6
+          simulation-distance=4
           EOF
 
       - name: Install playit
         run: |
           curl -SsL https://playit-cloud.github.io/ppa/key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/playit.gpg >/dev/null
           echo "deb [signed-by=/etc/apt/trusted.gpg.d/playit.gpg] https://playit-cloud.github.io/ppa/data ./" | sudo tee /etc/apt/sources.list.d/playit-cloud.list
-          sudo apt update -qq
-          sudo apt install -y playit
+          sudo apt update -qq && sudo apt install -y playit
 
       - name: Configure playit
         env:
@@ -71,8 +64,9 @@ jobs:
           sleep 20
 
       - name: Start Minecraft Server
+        timeout-minutes: 350
         run: |
-          java -Xmx14G -Xms6G \
+          java -Xmx14G -Xms4G \
           -XX:+UseG1GC \
           -XX:+ParallelRefProcEnabled \
           -XX:MaxGCPauseMillis=200 \
@@ -82,8 +76,8 @@ jobs:
           -XX:G1HeapRegionSize=32M \
           -XX:G1MixedGCCountTarget=4 \
           -XX:InitiatingHeapOccupancyPercent=15 \
-          @libraries/net/minecraftforge/forge/1.19.2-43.3.14/unix_args.txt \
-          nogui
+          -Dlog4j2.formatMsgNoLookups=true \
+          @libraries/net/minecraftforge/forge/1.19.2-43.3.14/unix_args.txt nogui
 
       - name: Save world
         if: always()
